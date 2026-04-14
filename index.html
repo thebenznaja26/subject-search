@@ -1,4 +1,14 @@
-<!-- นำเข้า Transformers.js (AI รันบนเบราว์เซอร์) -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ค้นหาหัวข้อวิทยานิพนธ์ด้วย AI</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #status { margin-bottom: 20px; }
+        .result-box { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+    </style>
 <script type="module">
     // 1. นำเข้า pipeline และ env
     import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0';
@@ -82,3 +92,5 @@
         }
     });
 </script>
+</head>
+<body>
