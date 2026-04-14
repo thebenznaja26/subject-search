@@ -1,42 +1,15 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบสืบค้นหัวเรื่องหนังสือ (AI Vector Search)</title>
-    <!-- นำเข้า Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background-color: #f9f9f9; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input[type="text"] { width: 70%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 10px 20px; font-size: 16px; background: #10b981; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:disabled { background: #ccc; }
-        .result-box { margin-top: 20px; padding: 15px; border-left: 5px solid #10b981; background: #f0fdf4; margin-bottom: 10px; }
-        #status { margin-top: 10px; color: #666; font-style: italic; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h2>📚 ค้นหาหัวเรื่องด้วย AI (Semantic Search)</h2>
-    <p>ค้นหาด้วยความหมาย ไม่ต้องพิมพ์ตรงเป๊ะก็หาเจอ</p>
-    
-    <input type="text" id="searchInput" placeholder="พิมพ์คำที่ต้องการค้นหา (เช่น เรื่องเกี่ยวกับสมอง, น้ำ, ไฮโดรเจน)...">
-    <button id="searchBtn" disabled>กำลังโหลด AI...</button>
-    
-    <div id="status">กำลังโหลดโมเดล AI ลงเบราว์เซอร์ (ครั้งแรกอาจใช้เวลา 10-20 วินาที)...</div>
-    
-    <div id="results"></div>
-</div>
-
 <!-- นำเข้า Transformers.js (AI รันบนเบราว์เซอร์) -->
 <script type="module">
-    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0';
+    // 1. นำเข้า pipeline และ env
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0';
 
-    // 1. ตั้งค่า Supabase (เปลี่ยน Key เป็น anon public key)
+    // 2. ตั้งค่าให้โหลดโมเดลจากเน็ตเท่านั้น
+    env.allowLocalModels = false;
+    env.useBrowserCache = true;
+
+    // 3. ตั้งค่า Supabase (อย่าลืมใส่ ANON KEY ของคุณ)
     const SUPABASE_URL = 'https://ssprqorqzdlkgnzualgg.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzcHJxb3JxemRsa2duenVhbGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTE0NDUsImV4cCI6MjA5MTcyNzQ0NX0.IUwXtppG8zsV5W1EkLzIvAmf7R1Hmnp5bKzDhyIjnBo'; // <--- เปลี่ยนตรงนี้!
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzcHJxb3JxemRsa2duenVhbGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTE0NDUsImV4cCI6MjA5MTcyNzQ0NX0.IUwXtppG8zsV5W1EkLzIvAmf7R1Hmnp5bKzDhyIjnBo'; 
     
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
@@ -44,28 +17,31 @@
     const statusDiv = document.getElementById('status');
     const searchBtn = document.getElementById('searchBtn');
 
-    // 2. โหลด AI Model (ตัวเดียวกับใน Python แต่รันบนเว็บ)
+    // 4. โหลด AI Model
     async function initModel() {
         try {
+            statusDiv.innerText = "⏳ กำลังดาวน์โหลดโมเดล AI (100MB+) โปรดรอสักครู่...";
+            // โหลดโมเดลตัวเดียวกับ Python
             extractor = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
             statusDiv.innerText = "✅ AI พร้อมใช้งานแล้ว! พิมพ์ค้นหาได้เลย";
             statusDiv.style.color = "green";
             searchBtn.innerText = "ค้นหา";
             searchBtn.disabled = false;
         } catch (error) {
-            statusDiv.innerText = "❌ โหลดโมเดล AI ไม่สำเร็จ";
+            console.error("AI Load Error:", error);
+            statusDiv.innerText = "❌ โหลดโมเดล AI ไม่สำเร็จ (ดูใน Console)";
             statusDiv.style.color = "red";
         }
     }
     
     initModel();
 
-    // 3. ฟังก์ชันค้นหาเมื่อกดปุ่ม
+    // 5. ฟังก์ชันค้นหาเมื่อกดปุ่ม
     searchBtn.addEventListener('click', async () => {
         const queryText = document.getElementById('searchInput').value;
         if (!queryText) return;
 
-        statusDiv.innerText = "⏳ กำลังค้นหา...";
+        statusDiv.innerText = "⏳ กำลังคำนวณและค้นหา...";
         document.getElementById('results').innerHTML = "";
 
         try {
@@ -73,7 +49,7 @@
             const output = await extractor(queryText, { pooling: 'mean', normalize: true });
             const queryEmbedding = Array.from(output.data);
 
-            // ส่ง Vector ไปเทียบใน Supabase ด้วยฟังก์ชัน match_subjects
+            // ส่ง Vector ไปเทียบใน Supabase
             const { data, error } = await supabaseClient.rpc('match_subjects', {
                 query_embedding: queryEmbedding,
                 match_threshold: 0.3, // ความแม่นยำ (0.0 - 1.0) ลองปรับดูได้
@@ -84,7 +60,7 @@
 
             statusDiv.innerText = "✅ ค้นหาสร็จสิ้น";
 
-            // 4. แสดงผลลัพธ์
+            // 6. แสดงผลลัพธ์
             if (data && data.length > 0) {
                 data.forEach(item => {
                     const percentMatch = (item.similarity * 100).toFixed(1);
@@ -97,15 +73,12 @@
                     `;
                 });
             } else {
-                document.getElementById('results').innerHTML = "<p>ไม่พบข้อมูลที่ตรงกัน</p>";
+                document.getElementById('results').innerHTML = "<p>ไม่พบข้อมูลที่ตรงความหมาย</p>";
             }
 
         } catch (error) {
-            console.error(error);
+            console.error("Search Error:", error);
             statusDiv.innerText = "❌ เกิดข้อผิดพลาดในการค้นหา";
         }
     });
 </script>
-
-</body>
-</html>
