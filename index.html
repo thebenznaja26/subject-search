@@ -3,74 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ค้นหาหัวข้อวิทยานิพนธ์ด้วย AI</title>
+    <title>ระบบสืบค้นหัวเรื่อง (AI Vector Search)</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        #status { margin-bottom: 20px; }
-        .result-box { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background-color: #f9f9f9; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input[type="text"] { width: 70%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; font-size: 16px; background: #10b981; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        .result-box { margin-top: 20px; padding: 15px; border-left: 5px solid #10b981; background: #f0fdf4; margin-bottom: 10px; }
+        #status { margin-top: 10px; color: #666; font-style: italic; font-weight: bold; }
     </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📚 ค้นหาหัวเรื่องด้วย AI (Semantic Search)</h2>
+    <p>ค้นหาด้วยความหมาย ไม่ต้องพิมพ์ตรงเป๊ะก็หาเจอ</p>
+    
+    <input type="text" id="searchInput" placeholder="พิมพ์คำที่ต้องการค้นหา เช่น น้ำ, สมอง...">
+    <button id="searchBtn" disabled>กำลังเตรียมระบบ...</button>
+    
+    <div id="status">กำลังเริ่มต้นระบบ...</div>
+    
+    <div id="results"></div>
+</div>
+
+<!-- สคริปต์การทำงานหลักทั้งหมด (แบบ Module) -->
 <script type="module">
-    // 1. นำเข้า pipeline และ env
+    // 1. นำเข้า Supabase แบบ ES Module (แก้ปัญหา undefined)
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    
+    // 2. นำเข้า Transformers.js (AI)
     import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0';
 
-    // 2. ตั้งค่าให้โหลดโมเดลจากเน็ตเท่านั้น
+    // 3. ปิดการหาโมเดลในเครื่อง ให้โหลดจากเน็ตชัวร์ๆ
     env.allowLocalModels = false;
     env.useBrowserCache = true;
 
-    // 3. ตั้งค่า Supabase (อย่าลืมใส่ ANON KEY ของคุณ)
+    // 4. ตั้งค่า Supabase (❗อย่าลืมเปลี่ยนเป็น KEY ของคุณ)
     const SUPABASE_URL = 'https://ssprqorqzdlkgnzualgg.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzcHJxb3JxemRsa2duenVhbGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTE0NDUsImV4cCI6MjA5MTcyNzQ0NX0.IUwXtppG8zsV5W1EkLzIvAmf7R1Hmnp5bKzDhyIjnBo'; 
     
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    let extractor;
+    // อ้างอิงหน้าตาเว็บ
     const statusDiv = document.getElementById('status');
     const searchBtn = document.getElementById('searchBtn');
 
-    // 4. โหลด AI Model
+    let extractor;
+
+    // 5. ฟังก์ชันโหลดโมเดล AI
     async function initModel() {
         try {
-            statusDiv.innerText = "⏳ กำลังดาวน์โหลดโมเดล AI (100MB+) โปรดรอสักครู่...";
-            // โหลดโมเดลตัวเดียวกับ Python
+            statusDiv.innerText = "⏳ กำลังดาวน์โหลดสมอง AI (100MB+) โปรดรอสักครู่...";
             extractor = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
+            
             statusDiv.innerText = "✅ AI พร้อมใช้งานแล้ว! พิมพ์ค้นหาได้เลย";
             statusDiv.style.color = "green";
             searchBtn.innerText = "ค้นหา";
             searchBtn.disabled = false;
         } catch (error) {
             console.error("AI Load Error:", error);
-            statusDiv.innerText = "❌ โหลดโมเดล AI ไม่สำเร็จ (ดูใน Console)";
+            statusDiv.innerText = "❌ โหลดโมเดล AI ไม่สำเร็จ";
             statusDiv.style.color = "red";
         }
     }
     
+    // สั่งให้เริ่มโหลด AI ทันทีที่เปิดหน้าเว็บ
     initModel();
 
-    // 5. ฟังก์ชันค้นหาเมื่อกดปุ่ม
+    // 6. เมื่อผู้ใช้กดปุ่มค้นหา
     searchBtn.addEventListener('click', async () => {
         const queryText = document.getElementById('searchInput').value;
         if (!queryText) return;
 
-        statusDiv.innerText = "⏳ กำลังคำนวณและค้นหา...";
+        statusDiv.innerText = "⏳ กำลังคำนวณและค้นหาในฐานข้อมูล...";
         document.getElementById('results').innerHTML = "";
 
         try {
-            // แปลงคำค้นหาเป็น Vector
+            // แปลงข้อความให้เป็น Vector 384 มิติ
             const output = await extractor(queryText, { pooling: 'mean', normalize: true });
             const queryEmbedding = Array.from(output.data);
 
-            // ส่ง Vector ไปเทียบใน Supabase
-            const { data, error } = await supabaseClient.rpc('match_subjects', {
+            // ยิงข้อมูลไปถาม Supabase
+            const { data, error } = await supabase.rpc('match_subjects', {
                 query_embedding: queryEmbedding,
-                match_threshold: 0.3, // ความแม่นยำ (0.0 - 1.0) ลองปรับดูได้
-                match_count: 5 // เอา 5 อันดับแรก
+                match_threshold: 0.2, // ความคล้ายขั้นต่ำ ปรับเป็น 0.2 เพื่อให้เจอข้อมูลกว้างขึ้น
+                match_count: 5
             });
 
             if (error) throw error;
 
-            statusDiv.innerText = "✅ ค้นหาสร็จสิ้น";
+            statusDiv.innerText = "✅ ค้นหาเสร็จสิ้น";
 
-            // 6. แสดงผลลัพธ์
+            // แสดงผลบนหน้าเว็บ
             if (data && data.length > 0) {
                 data.forEach(item => {
                     const percentMatch = (item.similarity * 100).toFixed(1);
@@ -78,12 +104,12 @@
                         <div class="result-box">
                             <strong>🇹🇭 ${item.thai_topic}</strong> <br>
                             🇬🇧 ${item.english_topic} <br>
-                            <small>ความคล้าย: ${percentMatch}%</small>
+                            <small>ความเกี่ยวข้อง: ${percentMatch}%</small>
                         </div>
                     `;
                 });
             } else {
-                document.getElementById('results').innerHTML = "<p>ไม่พบข้อมูลที่ตรงความหมาย</p>";
+                document.getElementById('results').innerHTML = "<p style='color:red;'>ไม่พบข้อมูลที่ใกล้เคียง ลองเปลี่ยนคำค้นหาดูครับ</p>";
             }
 
         } catch (error) {
@@ -92,5 +118,6 @@
         }
     });
 </script>
-</head>
-<body>
+
+</body>
+</html>
