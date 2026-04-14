@@ -38,7 +38,7 @@
     const SUPABASE_URL = 'https://ssprqorqzdlkgnzualgg.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzcHJxb3JxemRsa2duenVhbGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTE0NDUsImV4cCI6MjA5MTcyNzQ0NX0.IUwXtppG8zsV5W1EkLzIvAmf7R1Hmnp5bKzDhyIjnBo'; // <--- เปลี่ยนตรงนี้!
     
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     let extractor;
     const statusDiv = document.getElementById('status');
@@ -74,7 +74,7 @@
             const queryEmbedding = Array.from(output.data);
 
             // ส่ง Vector ไปเทียบใน Supabase ด้วยฟังก์ชัน match_subjects
-            const { data, error } = await supabase.rpc('match_subjects', {
+            const { data, error } = await supabaseClient.rpc('match_subjects', {
                 query_embedding: queryEmbedding,
                 match_threshold: 0.3, // ความแม่นยำ (0.0 - 1.0) ลองปรับดูได้
                 match_count: 5 // เอา 5 อันดับแรก
