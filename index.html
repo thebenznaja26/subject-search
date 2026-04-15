@@ -47,7 +47,14 @@
             min-height: 100vh;
         }
 
-        /* ปุ่มสลับโหมด (ขวาบน) */
+        .main-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-grow: 1;
+        }
+        
         .theme-toggle {
             position: absolute;
             top: 20px;
@@ -69,7 +76,6 @@
             border-color: var(--text-muted);
         }
 
-        /* ส่วนหัวเรื่อง (Header) */
         .header-container {
             text-align: center;
             margin-top: 80px;
@@ -95,7 +101,6 @@
             margin: 0;
         }
 
-        /* ช่องค้นหา */
         .search-container {
             width: 100%;
             max-width: 650px;
@@ -159,14 +164,13 @@
             height: 20px;
         }
 
-        /* ผลลัพธ์ */
         #results {
             width: 100%;
             max-width: 650px;
             display: flex;
             flex-direction: column;
             gap: 12px;
-            padding-bottom: 50px;
+            padding-bottom: 30px;
         }
 
         .result-box {
@@ -186,16 +190,19 @@
             gap: 5px;
         }
 
-        .topic-th {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .topic-en {
-            font-size: 0.95rem;
+        .topic-th { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
+        .topic-en { font-size: 0.95rem; color: var(--text-muted); }
+        
+        /* สไตล์สำหรับแสดงแหล่งที่มา (Source) */
+        .topic-source {
+            font-size: 0.9rem;
             color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
         }
+        .topic-source svg { width: 14px; height: 14px; }
 
         .match-score {
             font-size: 0.8rem;
@@ -208,7 +215,6 @@
             margin-top: 4px;
         }
 
-        /* ปุ่ม Copy */
         .copy-btn {
             background: transparent;
             border: 1px solid var(--card-border);
@@ -222,25 +228,22 @@
             font-size: 0.9rem;
         }
 
-        .copy-btn:hover {
-            background: var(--input-bg);
-            color: var(--text-main);
-        }
+        .copy-btn:hover { background: var(--input-bg); color: var(--text-main); }
+        .copy-btn svg { width: 16px; height: 16px; }
 
-        .copy-btn svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* จำนวนการค้นหา */
-        .search-counter {
+        .page-footer {
             margin-top: auto;
-            margin-bottom: 20px;
+            padding-bottom: 20px;
+            padding-top: 20px;
+            text-align: center;
+        }
+
+        .search-counter {
             color: var(--text-muted);
             font-size: 0.9rem;
+            margin-bottom: 10px;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .search-container { width: 90%; }
             #results { width: 90%; }
@@ -250,37 +253,38 @@
 </head>
 <body>
 
-    <!-- ปุ่มสลับโหมด Dark/Light -->
     <button class="theme-toggle" id="themeToggleBtn" title="สลับโหมดหน้าจอ">
-        <!-- ไอคอน Sun เริ่มต้น (จะถูกสลับด้วย JS) -->
         <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:20px; height:20px;">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
         </svg>
     </button>
-
-    <div class="header-container">
-        <!-- ไอคอนหนังสือ -->
-        <svg class="book-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-        </svg>
-        <h1>Smart Subject Finder</h1>
-        <p class="subtitle">ระบบค้นหาหัวเรื่องห้องสมุดด้วย AI</p>
-    </div>
     
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="พิมพ์คำที่ต้องการค้นหา เช่น พฤติกรรมผู้บริโภค..." autocomplete="off">
-        <button id="searchBtn" disabled>
-            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+    <div class="main-content">
+        <div class="header-container">
+            <svg class="book-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
             </svg>
-        </button>
+            <h1>Smart Subject Finder</h1>
+            <p class="subtitle">ระบบค้นหาหัวเรื่องห้องสมุดด้วย AI</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="พิมพ์คำที่ต้องการค้นหา เช่น พฤติกรรมผู้บริโภค..." autocomplete="off">
+            <button id="searchBtn" disabled>
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </button>
+        </div>
+        
+        <div id="status">กำลังดาวน์โหลดสมอง AI โปรดรอสักครู่...</div>
+        
+        <div id="results"></div>
     </div>
     
-    <div id="status">กำลังดาวน์โหลดสมอง AI โปรดรอสักครู่...</div>
-    
-    <div id="results"></div>
-
-    <div class="search-counter" id="searchCounterDisplay">ค้นหาไปแล้ว 0 ครั้ง</div>
+    <footer class="page-footer">
+        <div class="search-counter" id="searchCounterDisplay">ค้นหาไปแล้ว 0 ครั้ง</div>
+    </footer>
 
     <!-- สคริปต์การทำงาน -->
     <script type="module">
@@ -303,12 +307,10 @@
 
         let extractor;
 
-        // ---------------- ระบบ Dark/Light Mode ----------------
         const themeToggleBtn = document.getElementById('themeToggleBtn');
         const themeIcon = document.getElementById('themeIcon');
         const htmlElement = document.documentElement;
         
-        // เช็คค่าเริ่มต้นจาก LocalStorage
         const savedTheme = localStorage.getItem('theme') || 'dark';
         htmlElement.setAttribute('data-theme', savedTheme);
         updateThemeIcon(savedTheme);
@@ -329,11 +331,9 @@
             }
         }
 
-        // ---------------- ระบบนับการค้นหา ----------------
         let searchCount = parseInt(localStorage.getItem('ssFinderCount') || '0');
         counterDisplay.innerText = `ค้นหาไปแล้ว ${searchCount} ครั้ง`;
 
-        // ---------------- โหลด AI ----------------
         async function initModel() {
             try {
                 extractor = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
@@ -347,7 +347,6 @@
         }
         initModel();
 
-        // ---------------- ค้นหาข้อมูล ----------------
         async function performSearch() {
             const queryText = searchInput.value.trim();
             if (!queryText) return;
@@ -357,11 +356,9 @@
             searchBtn.disabled = true;
 
             try {
-                // แปลง Vector
                 const output = await extractor(queryText, { pooling: 'mean', normalize: true });
                 const queryEmbedding = Array.from(output.data);
 
-                // ค้นหาฐานข้อมูล (ปรับ match_count เป็น 10 รายการ)
                 const { data, error } = await supabase.rpc('match_subjects', {
                     query_embedding: queryEmbedding,
                     match_threshold: 0.2,
@@ -372,7 +369,6 @@
 
                 statusDiv.innerText = `✅ พบข้อมูลที่เกี่ยวข้อง ${data ? data.length : 0} รายการ`;
 
-                // เพิ่มตัวนับจำนวนค้นหา
                 searchCount++;
                 localStorage.setItem('ssFinderCount', searchCount);
                 counterDisplay.innerText = `ค้นหาไปแล้ว ${searchCount} ครั้ง`;
@@ -380,13 +376,26 @@
                 if (data && data.length > 0) {
                     data.forEach((item, index) => {
                         const percentMatch = (item.similarity * 100).toFixed(1);
-                        const copyText = `${item.thai_topic} (${item.english_topic})`;
+                        const copyText = item.thai_topic; 
                         
+                        // *** เพิ่มส่วนแสดงผลแหล่งที่มา (source) ***
+                        // ถ้ามีข้อมูล source ให้แสดงผล ถ้าไม่มี (เป็น null หรือค่าว่าง) ให้แสดงเป็นสตริงว่าง
+                        const sourceHtml = item.source ? `
+                            <div class="topic-source">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+                                </svg>
+                                ${item.source}
+                            </div>
+                        ` : '';
+
                         resultsDiv.innerHTML += `
                             <div class="result-box" style="animation: fadeIn 0.3s ease-in-out ${index * 0.05}s both;">
                                 <div class="result-content">
                                     <div class="topic-th">${item.thai_topic}</div>
                                     <div class="topic-en">${item.english_topic}</div>
+                                    ${sourceHtml}
                                     <div class="match-score">ความเกี่ยวข้อง: ${percentMatch}%</div>
                                 </div>
                                 <button class="copy-btn" data-copy="${copyText}">
@@ -415,7 +424,6 @@
             if (e.key === 'Enter') performSearch();
         });
 
-        // ---------------- ระบบ Copy Event Delegation ----------------
         resultsDiv.addEventListener('click', (e) => {
             const btn = e.target.closest('.copy-btn');
             if (!btn) return;
@@ -423,7 +431,6 @@
             const textToCopy = btn.getAttribute('data-copy');
             navigator.clipboard.writeText(textToCopy).then(() => {
                 const originalHtml = btn.innerHTML;
-                // เปลี่ยนปุ่มเป็นสีเขียวเพื่อบอกว่าก๊อปปี้แล้ว
                 btn.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="color: #10b981;">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
