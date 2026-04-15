@@ -1,123 +1,450 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบสืบค้นหัวเรื่อง (AI Vector Search)</title>
+    <title>Smart Subject Finder - ค้นหาหัวเรื่องด้วย AI</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background-color: #f9f9f9; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input[type="text"] { width: 70%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 10px 20px; font-size: 16px; background: #10b981; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:disabled { background: #ccc; }
-        .result-box { margin-top: 20px; padding: 15px; border-left: 5px solid #10b981; background: #f0fdf4; margin-bottom: 10px; }
-        #status { margin-top: 10px; color: #666; font-style: italic; font-weight: bold; }
+        /* CSS Variables สำหรับสลับ Dark/Light Mode */
+        :root {
+            --bg-color: #f3f4f6;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --card-bg: #ffffff;
+            --card-border: #e5e7eb;
+            --input-bg: #ffffff;
+            --input-border: #d1d5db;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #111827;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --accent-color: #3b82f6;
+            --accent-hover: #60a5fa;
+            --card-bg: #1f2937;
+            --card-border: #374151;
+            --input-bg: #1f2937;
+            --input-border: #374151;
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* ปุ่มสลับโหมด (ขวาบน) */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--text-muted);
+        }
+
+        /* ส่วนหัวเรื่อง (Header) */
+        .header-container {
+            text-align: center;
+            margin-top: 80px;
+            margin-bottom: 40px;
+        }
+
+        .book-icon {
+            color: var(--accent-color);
+            width: 48px;
+            height: 48px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        /* ช่องค้นหา */
+        .search-container {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            padding: 5px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .search-container input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .search-container input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-container button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .search-container button:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+        }
+
+        .search-container button:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .search-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        #status {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+            text-align: center;
+            height: 20px;
+        }
+
+        /* ผลลัพธ์ */
+        #results {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 50px;
+        }
+
+        .result-box {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .result-content {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .topic-th {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .topic-en {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .match-score {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            width: fit-content;
+            margin-top: 4px;
+        }
+
+        /* ปุ่ม Copy */
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--input-bg);
+            color: var(--text-main);
+        }
+
+        .copy-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* จำนวนการค้นหา */
+        .search-counter {
+            margin-top: auto;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .search-container { width: 90%; }
+            #results { width: 90%; }
+            h1 { font-size: 2rem; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>📚 ค้นหาหัวเรื่องด้วย AI (Semantic Search)</h2>
-    <p>ค้นหาด้วยความหมาย ไม่ต้องพิมพ์ตรงเป๊ะก็หาเจอ</p>
+    <!-- ปุ่มสลับโหมด Dark/Light -->
+    <button class="theme-toggle" id="themeToggleBtn" title="สลับโหมดหน้าจอ">
+        <!-- ไอคอน Sun เริ่มต้น (จะถูกสลับด้วย JS) -->
+        <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:20px; height:20px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+        </svg>
+    </button>
+
+    <div class="header-container">
+        <!-- ไอคอนหนังสือ -->
+        <svg class="book-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+        </svg>
+        <h1>Smart Subject Finder</h1>
+        <p class="subtitle">ระบบค้นหาหัวเรื่องห้องสมุดด้วย AI</p>
+    </div>
     
-    <input type="text" id="searchInput" placeholder="พิมพ์คำที่ต้องการค้นหา เช่น น้ำ, สมอง...">
-    <button id="searchBtn" disabled>กำลังเตรียมระบบ...</button>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="พิมพ์คำที่ต้องการค้นหา เช่น พฤติกรรมผู้บริโภค..." autocomplete="off">
+        <button id="searchBtn" disabled>
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+        </button>
+    </div>
     
-    <div id="status">กำลังเริ่มต้นระบบ...</div>
+    <div id="status">กำลังดาวน์โหลดสมอง AI โปรดรอสักครู่...</div>
     
     <div id="results"></div>
-</div>
 
-<!-- สคริปต์การทำงานหลักทั้งหมด (แบบ Module) -->
-<script type="module">
-    // 1. นำเข้า Supabase แบบ ES Module (แก้ปัญหา undefined)
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-    
-    // 2. นำเข้า Transformers.js (AI)
-    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0';
+    <div class="search-counter" id="searchCounterDisplay">ค้นหาไปแล้ว 0 ครั้ง</div>
 
-    // 3. ปิดการหาโมเดลในเครื่อง ให้โหลดจากเน็ตชัวร์ๆ
-    env.allowLocalModels = false;
-    env.useBrowserCache = true;
+    <!-- สคริปต์การทำงาน -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0';
 
-    // 4. ตั้งค่า Supabase (❗อย่าลืมเปลี่ยนเป็น KEY ของคุณ)
-    const SUPABASE_URL = 'https://ssprqorqzdlkgnzualgg.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzcHJxb3JxemRsa2duenVhbGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTE0NDUsImV4cCI6MjA5MTcyNzQ0NX0.IUwXtppG8zsV5W1EkLzIvAmf7R1Hmnp5bKzDhyIjnBo'; 
-    
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    // อ้างอิงหน้าตาเว็บ
-    const statusDiv = document.getElementById('status');
-    const searchBtn = document.getElementById('searchBtn');
+        env.allowLocalModels = false;
+        env.useBrowserCache = true;
 
-    let extractor;
+        const SUPABASE_URL = 'https://ssprqorqzdlkgnzualgg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzcHJxb3JxemRsa2duenVhbGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTE0NDUsImV4cCI6MjA5MTcyNzQ0NX0.IUwXtppG8zsV5W1EkLzIvAmf7R1Hmnp5bKzDhyIjnBo'; 
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const statusDiv = document.getElementById('status');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('searchInput');
+        const resultsDiv = document.getElementById('results');
+        const counterDisplay = document.getElementById('searchCounterDisplay');
 
-    // 5. ฟังก์ชันโหลดโมเดล AI
-    async function initModel() {
-        try {
-            statusDiv.innerText = "⏳ กำลังดาวน์โหลดสมอง AI (100MB+) โปรดรอสักครู่...";
-            extractor = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
-            
-            statusDiv.innerText = "✅ AI พร้อมใช้งานแล้ว! พิมพ์ค้นหาได้เลย";
-            statusDiv.style.color = "green";
-            searchBtn.innerText = "ค้นหา";
-            searchBtn.disabled = false;
-        } catch (error) {
-            console.error("AI Load Error:", error);
-            statusDiv.innerText = "❌ โหลดโมเดล AI ไม่สำเร็จ";
-            statusDiv.style.color = "red";
-        }
-    }
-    
-    // สั่งให้เริ่มโหลด AI ทันทีที่เปิดหน้าเว็บ
-    initModel();
+        let extractor;
 
-    // 6. เมื่อผู้ใช้กดปุ่มค้นหา
-    searchBtn.addEventListener('click', async () => {
-        const queryText = document.getElementById('searchInput').value;
-        if (!queryText) return;
+        // ---------------- ระบบ Dark/Light Mode ----------------
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+        const htmlElement = document.documentElement;
+        
+        // เช็คค่าเริ่มต้นจาก LocalStorage
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        htmlElement.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme);
 
-        statusDiv.innerText = "⏳ กำลังคำนวณและค้นหาในฐานข้อมูล...";
-        document.getElementById('results').innerHTML = "";
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            htmlElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        });
 
-        try {
-            // แปลงข้อความให้เป็น Vector 384 มิติ
-            const output = await extractor(queryText, { pooling: 'mean', normalize: true });
-            const queryEmbedding = Array.from(output.data);
-
-            // ยิงข้อมูลไปถาม Supabase
-            const { data, error } = await supabase.rpc('match_subjects', {
-                query_embedding: queryEmbedding,
-                match_threshold: 0.2, // ความคล้ายขั้นต่ำ ปรับเป็น 0.2 เพื่อให้เจอข้อมูลกว้างขึ้น
-                match_count: 5
-            });
-
-            if (error) throw error;
-
-            statusDiv.innerText = "✅ ค้นหาเสร็จสิ้น";
-
-            // แสดงผลบนหน้าเว็บ
-            if (data && data.length > 0) {
-                data.forEach(item => {
-                    const percentMatch = (item.similarity * 100).toFixed(1);
-                    document.getElementById('results').innerHTML += `
-                        <div class="result-box">
-                            <strong>🇹🇭 ${item.thai_topic}</strong> <br>
-                            🇬🇧 ${item.english_topic} <br>
-                            <small>ความเกี่ยวข้อง: ${percentMatch}%</small>
-                        </div>
-                    `;
-                });
+        function updateThemeIcon(theme) {
+            if (theme === 'dark') {
+                themeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />`;
             } else {
-                document.getElementById('results').innerHTML = "<p style='color:red;'>ไม่พบข้อมูลที่ใกล้เคียง ลองเปลี่ยนคำค้นหาดูครับ</p>";
+                themeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />`;
             }
-
-        } catch (error) {
-            console.error("Search Error:", error);
-            statusDiv.innerText = "❌ เกิดข้อผิดพลาดในการค้นหา";
         }
-    });
-</script>
 
+        // ---------------- ระบบนับการค้นหา ----------------
+        let searchCount = parseInt(localStorage.getItem('ssFinderCount') || '0');
+        counterDisplay.innerText = `ค้นหาไปแล้ว ${searchCount} ครั้ง`;
+
+        // ---------------- โหลด AI ----------------
+        async function initModel() {
+            try {
+                extractor = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2');
+                statusDiv.innerText = "✨ AI พร้อมใช้งานแล้ว พิมพ์ค้นหาได้เลย";
+                searchBtn.disabled = false;
+            } catch (error) {
+                console.error("AI Load Error:", error);
+                statusDiv.innerText = "❌ โหลดโมเดล AI ไม่สำเร็จ โปรดรีเฟรชหน้าเว็บ";
+                statusDiv.style.color = "red";
+            }
+        }
+        initModel();
+
+        // ---------------- ค้นหาข้อมูล ----------------
+        async function performSearch() {
+            const queryText = searchInput.value.trim();
+            if (!queryText) return;
+
+            statusDiv.innerText = "⏳ กำลังประมวลผลความหมายและค้นหา...";
+            resultsDiv.innerHTML = "";
+            searchBtn.disabled = true;
+
+            try {
+                // แปลง Vector
+                const output = await extractor(queryText, { pooling: 'mean', normalize: true });
+                const queryEmbedding = Array.from(output.data);
+
+                // ค้นหาฐานข้อมูล (ปรับ match_count เป็น 10 รายการ)
+                const { data, error } = await supabase.rpc('match_subjects', {
+                    query_embedding: queryEmbedding,
+                    match_threshold: 0.2,
+                    match_count: 10 
+                });
+
+                if (error) throw error;
+
+                statusDiv.innerText = `✅ พบข้อมูลที่เกี่ยวข้อง ${data ? data.length : 0} รายการ`;
+
+                // เพิ่มตัวนับจำนวนค้นหา
+                searchCount++;
+                localStorage.setItem('ssFinderCount', searchCount);
+                counterDisplay.innerText = `ค้นหาไปแล้ว ${searchCount} ครั้ง`;
+
+                if (data && data.length > 0) {
+                    data.forEach((item, index) => {
+                        const percentMatch = (item.similarity * 100).toFixed(1);
+                        const copyText = `${item.thai_topic} (${item.english_topic})`;
+                        
+                        resultsDiv.innerHTML += `
+                            <div class="result-box" style="animation: fadeIn 0.3s ease-in-out ${index * 0.05}s both;">
+                                <div class="result-content">
+                                    <div class="topic-th">${item.thai_topic}</div>
+                                    <div class="topic-en">${item.english_topic}</div>
+                                    <div class="match-score">ความเกี่ยวข้อง: ${percentMatch}%</div>
+                                </div>
+                                <button class="copy-btn" data-copy="${copyText}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 16.5V19.5A2.25 2.25 0 0113.5 21h-9A2.25 2.25 0 012.25 19.5v-9A2.25 2.25 0 014.5 8.25H7.5M15.75 16.5h-9m9 0H21m-9-8.25v-6a2.25 2.25 0 012.25-2.25h9A2.25 2.25 0 0121 4.5v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25z" />
+                                    </svg>
+                                    คัดลอก
+                                </button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    resultsDiv.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">ไม่พบข้อมูลที่ใกล้เคียง ลองเปลี่ยนคำค้นหาดูครับ</div>`;
+                }
+
+            } catch (error) {
+                console.error("Search Error:", error);
+                statusDiv.innerText = "❌ เกิดข้อผิดพลาดในการค้นหา";
+            } finally {
+                searchBtn.disabled = false;
+            }
+        }
+
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        // ---------------- ระบบ Copy Event Delegation ----------------
+        resultsDiv.addEventListener('click', (e) => {
+            const btn = e.target.closest('.copy-btn');
+            if (!btn) return;
+
+            const textToCopy = btn.getAttribute('data-copy');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalHtml = btn.innerHTML;
+                // เปลี่ยนปุ่มเป็นสีเขียวเพื่อบอกว่าก๊อปปี้แล้ว
+                btn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="color: #10b981;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    <span style="color: #10b981;">คัดลอกแล้ว</span>
+                `;
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                }, 2000);
+            });
+        });
+
+    </script>
+
+    <!-- Animation Keyframes -->
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </body>
 </html>
